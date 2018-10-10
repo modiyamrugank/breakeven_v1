@@ -11,7 +11,7 @@ import numpy as np
 
 from bokeh.io import curdoc
 from bokeh.layouts import row, widgetbox, layout, column
-from bokeh.models import ColumnDataSource, HoverTool
+from bokeh.models import ColumnDataSource, HoverTool, NumeralTickFormatter, Span, Label
 from bokeh.models.widgets import Slider, TextInput
 from bokeh.plotting import figure,output_file,show
 
@@ -56,13 +56,14 @@ cost_per_kg_current = lh_cost_per_kg_current+mr_cost_per_kg_current+helper_cost_
 
 div_factor = cost_per_kg_current / CONST_COST_PER_KG_CURRENT_AVG
 
-lh_utils = [.25,.30,.35,.40,.45,.50,.55,.60,.65,.70,.75,.80,.85,.90]
+#lh_utils = [.25,.30,.35,.40,.45,.50,.55,.60,.65,.70,.75,.80,.85,.90]
+lh_utils = [25,30,35,40,45,50,55,60,65,70,75,80,85,90]
 
 mr_util = .30
 cost_per_kg = []
 for i in lh_utils:
 
-    lh_cost_per_kg_iter = LH_COST_PER_LOAD / (CONST_CARRYING_CAPACITY_PER_TRUCK_KG * i)
+    lh_cost_per_kg_iter = LH_COST_PER_LOAD / (CONST_CARRYING_CAPACITY_PER_TRUCK_KG * i/100.)
     mr_cost_per_kg_iter = (CONST_MR_COST_PER_DAY_PER_TRANSPORTER_excl_helper_incl_incentive / 
                           (CONST_MR_WEIGHT_CEILING_PER_DAY_PER_TRANSPORTER_KG*mr_util))
     helper_cost_per_kg_iter = helper_cost_per_day / (CONST_MR_WEIGHT_CEILING_PER_DAY_PER_TRANSPORTER_KG * mr_util)
@@ -73,32 +74,44 @@ for i in lh_utils:
 source = ColumnDataSource(data=dict(x=lh_utils, y=cost_per_kg))
 
 # Set up plot
-plot = figure(plot_height=600, plot_width=700, title="Cost Per Kg Vs LH Utilisation",
+plot = figure(plot_height=600, plot_width=700, title="Cost Per Kg Vs Net LH Utilisation",
             tools="crosshair,pan,reset,save,wheel_zoom,hover",
-              x_range=[.25,1], y_range=[1,5])
+              x_range=[20,100], y_range=[1,5])
 
 hover = plot.select(dict(type=HoverTool))
 
-hover.tooltips = [("LH Utilisation","$x"),("Cost Per KG","$y")]
+hover.tooltips = [("Net LH Utilisation %","$x"),("Cost Per KG","$y")]
 plot.line('x', 'y', source=source, line_width=3, line_alpha=0.6)
 
+plot.xaxis.axis_label = 'Line-haul Utilisation %'
+plot.yaxis.axis_label = 'Cost Per KG'
+plot.title.align = "center"
 
+breakeven_line = Span(location=CONST_REVENUE_PER_KG_CURRENT_AVG ,dimension='width',line_color='black',line_dash='dashed',line_width=3.0)
+plot.add_layout(breakeven_line)
+
+citation = Label(x=70, y=70, x_units='screen', y_units='screen',
+                 text='Breakeven: Cost per KG = Revenue per KG = 1.9', render_mode='css',
+                 border_line_color='black', border_line_alpha=0,
+                 background_fill_color='white', background_fill_alpha=1.0)
+
+plot.add_layout(citation)                 
 
 # Set up widgets
-mr_util_slider = Slider(title="MR Productivity", value=mr_util, start=mr_util, end=1.0, step=0.05)
-helper_cost_slider = Slider(title="% Helper Cost Externalised", value=0, start=0, end=1, step=0.1)
+mr_util_slider = Slider(title="MR Productivity %", value=mr_util*100, start=mr_util*100, end=100, step=5)
+helper_cost_slider = Slider(title="% Helper Cost Externalised", value=0, start=0, end=100, step=10)
 
 
 def update_data(attrname, old, new):
 
     # Get the current slider values
-    mr_util = mr_util_slider.value
-    helper_cost_externalized = helper_cost_slider.value
+    mr_util = float(mr_util_slider.value)/100.
+    helper_cost_externalized = float(helper_cost_slider.value)/100.
 
     cost_per_kg = []
     for i in lh_utils:
 
-        lh_cost_per_kg_iter = LH_COST_PER_LOAD / (CONST_CARRYING_CAPACITY_PER_TRUCK_KG * i)
+        lh_cost_per_kg_iter = LH_COST_PER_LOAD / (CONST_CARRYING_CAPACITY_PER_TRUCK_KG * i/100.)
         mr_cost_per_kg_iter = (CONST_MR_COST_PER_DAY_PER_TRANSPORTER_excl_helper_incl_incentive / 
                           (CONST_MR_WEIGHT_CEILING_PER_DAY_PER_TRANSPORTER_KG*mr_util))
         helper_cost_per_kg_iter = (helper_cost_per_day*(1-helper_cost_externalized)) / (CONST_MR_WEIGHT_CEILING_PER_DAY_PER_TRANSPORTER_KG * mr_util)
