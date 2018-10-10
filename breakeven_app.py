@@ -73,7 +73,7 @@ for i in lh_utils:
 source = ColumnDataSource(data=dict(x=lh_utils, y=cost_per_kg))
 
 # Set up plot
-plot = figure(plot_height=600, plot_width=700, title="Cost Per Kg Vs Utilisation",
+plot = figure(plot_height=600, plot_width=700, title="Cost Per Kg Vs LH Utilisation",
             tools="crosshair,pan,reset,save,wheel_zoom,hover",
               x_range=[.25,1], y_range=[1,5])
 
