@@ -75,12 +75,14 @@ source = ColumnDataSource(data=dict(x=lh_utils, y=cost_per_kg))
 
 # Set up plot
 plot = figure(plot_height=600, plot_width=700, title="Cost Per Kg Vs Net LH Utilisation",
-            tools="crosshair,pan,reset,save,wheel_zoom,hover",
+            tools="pan,reset,save,wheel_zoom,hover",
               x_range=[20,100], y_range=[1,5])
 
 hover = plot.select(dict(type=HoverTool))
 
-hover.tooltips = [("Net LH Utilisation %","$x"),("Cost Per KG","$y")]
+hover.tooltips = [("LH Utilisation","$x{00.0} %"),("Cost Per KG","$y{0.0} Rs.")]
+hover.mode = 'vline'
+
 plot.line('x', 'y', source=source, line_width=3, line_alpha=0.6)
 
 plot.xaxis.axis_label = 'Line-haul Utilisation %'
