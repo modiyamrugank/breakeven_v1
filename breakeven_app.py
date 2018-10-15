@@ -11,7 +11,7 @@ import numpy as np
 
 from bokeh.io import curdoc
 from bokeh.layouts import row, widgetbox, layout, column
-from bokeh.models import ColumnDataSource, HoverTool, NumeralTickFormatter, Span, Label
+from bokeh.models import ColumnDataSource, HoverTool, NumeralTickFormatter, Span, Label, RadioGroup, Ray
 from bokeh.models.widgets import Slider, TextInput
 from bokeh.plotting import figure,output_file,show
 
@@ -83,25 +83,44 @@ hover = plot.select(dict(type=HoverTool))
 hover.tooltips = [("LH Utilisation","$x{00.0} %"),("Cost Per KG","$y{0.0} Rs.")]
 hover.mode = 'vline'
 
-plot.line('x', 'y', source=source, line_width=3, line_alpha=0.6)
 
-plot.xaxis.axis_label = 'Line-haul Utilisation %'
+plot.line('x', 'y', source=source, line_width=3, line_alpha=0.6)
+plot.xaxis.axis_label = 'Net Line-haul Utilisation %'
 plot.yaxis.axis_label = 'Cost Per KG'
 plot.title.align = "center"
 
-breakeven_line = Span(location=CONST_REVENUE_PER_KG_CURRENT_AVG ,dimension='width',line_color='black',line_dash='dashed',line_width=3.0)
-plot.add_layout(breakeven_line)
 
-citation = Label(x=70, y=70, x_units='screen', y_units='screen',
-                 text='Breakeven: Cost per KG = Revenue per KG = 1.9', render_mode='css',
+#slope_const = Ray(x=20., y=CONST_REVENUE_PER_KG_CURRENT_AVG, length=100, angle=0.0, line_color='firebrick', line_width=2.5, line_dash='dashed')
+slope_down = Ray(x=20., y=CONST_REVENUE_PER_KG_CURRENT_AVG, length=100, angle=-0.075, line_color='firebrick', line_width=2.5, line_dash='dashed')
+#slope_up = Ray(x=20., y=CONST_REVENUE_PER_KG_CURRENT_AVG, length=100, angle=0.075, line_color='firebrick', line_width=3, line_dash='dashed')
+
+citation_const = Label(x=40, y=4.5, x_units='data', y_units='data',
+                 text='Breakeven: Cost per KG = Revenue per KG', render_mode='css',
                  border_line_color='black', border_line_alpha=0,
                  background_fill_color='white', background_fill_alpha=1.0)
 
-plot.add_layout(citation)                 
+citation_rev = Label(x=80, y=1.4, x_units='data', y_units='data',
+                 text='Revenue Per KG',text_color = 'firebrick', render_mode='css',text_font_size='9pt',
+                 text_font_style="italic",
+                 border_line_color='black', border_line_alpha=0,
+                 background_fill_color='white', background_fill_alpha=1.0)
+
+#s1 = plot.add_glyph(slope_const)
+s2 = plot.add_glyph(slope_down)
+#s3 = plot.add_glyph(slope_up)
+
+#s1.visible =True
+s2.visible = True
+#s3.visible = False
+
+plot.add_layout(citation_const)
+plot.add_layout(citation_rev)
+
 
 # Set up widgets
 mr_util_slider = Slider(title="MR Productivity %", value=mr_util*100, start=mr_util*100, end=100, step=5)
 helper_cost_slider = Slider(title="% Helper Cost Externalised", value=0, start=0, end=100, step=10)
+#radio_group = RadioGroup(labels=["Constant Revenue/KG", "Decreasing Revenue/KG"], active=0)
 
 
 def update_data(attrname, old, new):
@@ -124,16 +143,37 @@ def update_data(attrname, old, new):
 
     source.data = dict(x=lh_utils, y=cost_per_kg)
 
-for w in [mr_util_slider,helper_cost_slider]:
-    w.on_change('value', update_data)
+    #if radio_group.active == 0:
+
+        #s1.visible =True
+        #s2.visible = False
+        #s3.visible = False
+
+    #elif radio_group.active == 1:
+
+        #s1.visible =False
+        #s2.visible = True
+        #s3.visible = False
+
+    #elif radio_group.active == 2:
+
+     #   s1.visible =False
+     #   s2.visible = False
+     #   s3.visible = True
+ 
+
+#for w in [mr_util_slider,helper_cost_slider]:
+ #   w.on_change('value', update_data,)
+
+mr_util_slider.on_change('value',update_data)
+helper_cost_slider.on_change('value',update_data)
+#radio_group.on_change('active',update_data)
 
 
 
 # Set up layouts and add to document
-inputs = widgetbox(mr_util_slider,helper_cost_slider)
-#widgets = widgetbox(mr_util_slider,helper_cost_slider)
-#plt = row(plot,)
-#l = column(widgets,plot)
+inputs = widgetbox(mr_util_slider,helper_cost_slider)#,radio_group)
 curdoc().add_root(row(inputs, plot, width=800))
 curdoc().title = "Break Even Scenarios"
+
 
